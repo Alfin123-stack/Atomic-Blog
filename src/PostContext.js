@@ -50,7 +50,7 @@ function PostProvider({ children }) {
 function usePosts() {
   const context = useContext(PostContext);
   if (context === undefined)
-    throw new Error("Context is undefined for post context");
+    throw new Error("Context is undefined for 57 context");
   return context;
 }
 
