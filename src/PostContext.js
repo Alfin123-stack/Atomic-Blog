@@ -1,5 +1,12 @@
-import { createContext, useContext, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import { faker } from "@faker-js/faker";
+
 function createRandomPost() {
   return {
     title: `${faker.hacker.adjective()} ${faker.hacker.noun()}`,
@@ -15,42 +22,46 @@ function PostProvider({ children }) {
   );
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Derived state. These are the posts that will actually be displayed
-  const searchedPosts =
-    searchQuery.length > 0
+  // Memoize the derived state for searchedPosts
+  const searchedPosts = useMemo(() => {
+    return searchQuery.length > 0
       ? posts.filter((post) =>
           `${post.title} ${post.body}`
             .toLowerCase()
             .includes(searchQuery.toLowerCase())
         )
       : posts;
+  }, [posts, searchQuery]);
 
-  function handleAddPost(post) {
-    setPosts((posts) => [post, ...posts]);
-  }
+  // const handleAddPost = useCallback((post) => {
+  //   setPosts((prevPosts) => [post, ...prevPosts]);
+  // }, []);
 
-  function handleClearPosts() {
+  const handleClearPosts = useCallback(() => {
     setPosts([]);
-  }
+  }, []);
 
-  return (
-    <PostContext.Provider
-      value={{
-        posts: searchedPosts,
-        onAddPost: handleAddPost,
-        onClearPosts: handleClearPosts,
-        searchQuery,
-        setSearchQuery,
-      }}>
-      {children}
-    </PostContext.Provider>
+  // Memoize the context value
+  const value = useMemo(
+    () => ({
+      posts: searchedPosts,
+      // onAddPost: handleAddPost,
+      onClearPosts: handleClearPosts,
+      searchQuery,
+      setSearchQuery,
+      setPosts
+    }),
+    [searchedPosts, handleClearPosts, searchQuery]
   );
+
+  return <PostContext.Provider value={value}>{children}</PostContext.Provider>;
 }
 
 function usePosts() {
   const context = useContext(PostContext);
-  if (context === undefined)
-    throw new Error("Context is undefined for 57 context");
+  if (context === undefined) {
+    throw new Error("usePosts must be used within a PostProvider");
+  }
   return context;
 }
 

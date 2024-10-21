@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { memo, useCallback, useEffect, useState } from "react";
 import { faker } from "@faker-js/faker";
-import { PostProvider, usePosts } from "./PostContext";
+import { usePosts } from "./PostContext";
 
 function createRandomPost() {
   return {
@@ -11,6 +11,15 @@ function createRandomPost() {
 
 function App() {
   const [isFakeDark, setIsFakeDark] = useState(false);
+
+  const { setPosts } = usePosts();
+
+  const handleAddPost = useCallback(
+    (post) => {
+      setPosts((prevPosts) => [post, ...prevPosts]);
+    },
+    [setPosts]
+  );
 
   // Whenever `isFakeDark` changes, we toggle the `fake-dark-mode` class on the HTML element (see in "Elements" dev tool).
   useEffect(
@@ -27,12 +36,10 @@ function App() {
         className="btn-fake-dark-mode">
         {isFakeDark ? "☀️" : "🌙"}
       </button>
-      <PostProvider>
-        <Header />
-        <Main />
-        <Archive />
-        <Footer />
-      </PostProvider>
+      <Header />
+      <Main onAddPost={handleAddPost} />
+      <Archive onAddPost={handleAddPost} />
+      <Footer />
     </section>
   );
 }
@@ -69,10 +76,10 @@ function Results() {
   return <p>🚀 {posts.length} atomic posts found</p>;
 }
 
-function Main() {
+function Main({ onAddPost }) {
   return (
     <main>
-      <FormAddPost />
+      <FormAddPost onAddPost={onAddPost} />
       <Posts />
     </main>
   );
@@ -86,10 +93,10 @@ function Posts() {
   );
 }
 
-function FormAddPost() {
+function FormAddPost({ onAddPost }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const { onAddPost } = usePosts();
+  // const { onAddPost } = usePosts();
 
   const handleSubmit = function (e) {
     e.preventDefault();
@@ -130,14 +137,14 @@ function List() {
   );
 }
 
-function Archive() {
+const Archive = memo(function Archive({ onAddPost }) {
   // Here we don't need the setter function. We're only using state to store these posts because the callback function passed into useState (which generates the posts) is only called once, on the initial render. So we use this trick as an optimization technique, because if we just used a regular variable, these posts would be re-created on every render. We could also move the posts outside the components, but I wanted to show you this trick 😉
   const [posts] = useState(() =>
     // 💥 WARNING: This might make your computer slow! Try a smaller `length` first
     Array.from({ length: 10000 }, () => createRandomPost())
   );
 
-  const { onAddPost } = usePosts();
+  // const { onAddPost } = usePosts();
 
   const [showArchive, setShowArchive] = useState(false);
 
@@ -162,7 +169,7 @@ function Archive() {
       )}
     </aside>
   );
-}
+});
 
 function Footer() {
   return <footer>&copy; by The Atomic Blog ✌️</footer>;
